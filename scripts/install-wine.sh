@@ -18,11 +18,11 @@ tag="-1" #example: -1 (some wine .deb files have -1 tag on the end and some don'
 ########################################################
 
 # Wine download links from WineHQ: https://dl.winehq.org/wine-builds/
-LNKA="https://dl.winehq.org/wine-builds/${id}/dists/${dist}/main/binary-amd64/" #amd64-wine links
+LNKA="https://dl.winehq.org/wine-builds/${id}/pool/main/w/wine/" #amd64-wine links
 DEB_A1="wine-${branch}-amd64_${version}~${dist}${tag}_amd64.deb" #wine64 main bin
 DEB_A2="wine-${branch}_${version}~${dist}${tag}_amd64.deb" #wine64 support files (required for wine64 / can work alongside wine_i386 main bin)
 DEB_A3="winehq-${branch}_${version}~${dist}${tag}_amd64.deb" #shortcuts & docs
-LNKB="https://dl.winehq.org/wine-builds/${id}/dists/${dist}/main/binary-i386/" #i386-wine links
+LNKB="https://dl.winehq.org/wine-builds/${id}/pool/main/w/wine/" #i386-wine links
 DEB_B1="wine-${branch}-i386_${version}~${dist}${tag}_i386.deb" #wine_i386 main bin
 DEB_B2="wine-${branch}_${version}~${dist}${tag}_i386.deb" #wine_i386 support files (required for wine_i386 if no wine64 / CONFLICTS WITH wine64 support files)
 DEB_B3="winehq-${branch}_${version}~${dist}${tag}_i386.deb" #shortcuts & docs
@@ -38,7 +38,7 @@ dpkg-deb -x ${DEB_A1} wine-installer
 dpkg-deb -x ${DEB_A2} wine-installer
 dpkg-deb -x ${DEB_B1} wine-installer
 echo -e "Installing wine . . ."
-mv wine-installer/opt/wine* ~/wine
+mv wine-installer/opt/wine* /opt/wine
 
 # Clean up
 rm -rf ${DEB_A1} ${DEB_A2} ${DEB_B1}
@@ -64,8 +64,13 @@ apt-get install -y libasound2-plugins:arm64 libasound2:arm64 libc6:arm64 libcapi
 # These packages are needed for running wine-staging on RPiOS (Credits: chills340)
 apt install libstb0 -y
 cd ~
-wget -r -l1 -np -nd -A "libfaudio0_*~bpo10+1_i386.deb" http://ftp.us.debian.org/debian/pool/main/f/faudio/ # Download libfaudio i386 no matter its version number
-dpkg-deb -xv libfaudio0_*~bpo10+1_i386.deb libfaudio
+wget -r -l1 -np -nd -A "libfaudio0_*_i386.deb" http://ftp.us.debian.org/debian/pool/main/f/faudio/ 
+
+# Sort the downloaded versions and pick only the single newest one
+LATEST_FAUDIO=$(ls libfaudio0_*_i386.deb | sort -V | tail -n 1)
+
+# Extract only that single latest file
+dpkg-deb -xv "$LATEST_FAUDIO" libfaudio
 cp -TRv libfaudio/usr/ /usr/
 
 # Install winetricks
@@ -74,7 +79,7 @@ chmod +x winetricks
 mv winetricks /usr/local/bin/
 
 # Clean up
-rm libfaudio0_*~bpo10+1_i386.deb
+rm -f libfaudio0_*_i386.deb
 rm -rf libfaudio
 apt-get -y autoremove
 apt-get clean autoclean
